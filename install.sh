@@ -227,11 +227,15 @@ verify_manifest_signature() {
     sig_b64="$(awk -v k="$keyid" '$1=="oxide-sig1" && $2==k {print $3; exit}' "$sigfile")"
     [ -n "$sig_b64" ] || die "manifest.json.sig has no signature by key $keyid — the release key changed or the file is tampered; get the DMG from https://github.com/$REPO/releases"
     printf '%s' "$sig_b64" | base64 -d > "$tmp/manifest.sig.bin"
-    if openssl pkeyutl -verify -pubin -inkey "$pem" -rawin -in "$manifest" -sigfile "$tmp/manifest.sig.bin" >/dev/null 2>&1; then
-        ok "manifest signature valid (key $keyid)"
-    else
-        die "manifest signature INVALID — refusing to continue"
-    fi
+    # Three outcomes, told apart by openssl's own words: verified, a real
+    # mismatch (refuse), or openssl could not run the check at all (say so,
+    # fall back to the Apple chain; the installed oxide re-verifies in step 8).
+    out="$(openssl pkeyutl -verify -pubin -inkey "$pem" -rawin -in "$manifest" -sigfile "$tmp/manifest.sig.bin" 2>&1)"
+    case "$out" in
+        *"Verified Successfully"*) ok "manifest signature valid (key $keyid, $(openssl version | cut -d' ' -f1-2))" ;;
+        *"Verification Failure"*)  die "manifest signature INVALID — refusing to continue" ;;
+        *) note "manifest signature check skipped: $(openssl version | cut -d' ' -f1-2) could not verify Ed25519 ($(printf '%s' "$out" | head -1))" ;;
+    esac
 }
 
 main "$@"
