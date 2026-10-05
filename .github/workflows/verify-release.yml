@@ -1,0 +1,71 @@
+name: verify-release
+
+# Runs on every published release: re-verifies the assets (sha256, Ed25519
+# manifest signature) and runs install.sh on a clean macOS runner, then the
+# installed `oxide version`. VM-based tests cannot run here (no nested
+# virtualization on hosted runners); this proves the DISTRIBUTION path, not
+# the engine.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to verify (e.g. v0.3.0)"
+        required: true
+
+jobs:
+  verify:
+    runs-on: macos-15
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve tag
+        id: tag
+        run: |
+          tag="${{ github.event.release.tag_name }}"
+          [ -n "$tag" ] || tag="${{ github.event.inputs.tag }}"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Download assets
+        run: gh release download "${{ steps.tag.outputs.tag }}" --repo "$GITHUB_REPOSITORY" --dir assets
+
+      - name: sha256
+        working-directory: assets
+        run: shasum -a 256 -c SHA256SUMS
+
+      - name: Manifest signature (Ed25519)
+        run: |
+          python3 -m pip install --quiet cryptography
+          python3 verify-sig.py keys/oxide-release.pub assets/manifest.json assets/manifest.json.sig
+
+      - name: Manifest matches the release
+        run: |
+          v="$(sed -n 's/^[[:space:]]*"version":[[:space:]]*"\([^"]*\)".*/\1/p' assets/manifest.json | head -1)"
+          [ "$v" = "${{ steps.tag.outputs.version }}" ] || { echo "manifest version $v != tag"; exit 1; }
+          sha="$(sed -n 's/^[[:space:]]*"sha256":[[:space:]]*"\([^"]*\)".*/\1/p' assets/manifest.json | head -1)"
+          grep -q "^$sha " assets/SHA256SUMS || { echo "manifest sha256 not in SHA256SUMS"; exit 1; }
+
+      - name: install.sh on a clean machine
+        env:
+          OXIDE_VERSION: ${{ steps.tag.outputs.version }}
+          OXIDE_INSTALL_DIR: ${{ runner.temp }}/apps
+          OXIDE_BIN_DIR: ${{ runner.temp }}/bin
+        run: |
+          sh install.sh
+          "$OXIDE_BIN_DIR/oxide" version
+          v="$("$OXIDE_BIN_DIR/oxide" --version | awk '{print $NF}')"
+          [ "$v" = "$OXIDE_VERSION" ] || { echo "installed $v, expected $OXIDE_VERSION"; exit 1; }
+          spctl -a -t exec -vv "$OXIDE_INSTALL_DIR/Oxide.app"
+          # 0 = this release is the latest, 2 = an even newer one exists; both fine.
+          set +e; "$OXIDE_BIN_DIR/oxide" self-update --check; rc=$?; set -e
+          [ "$rc" = 0 ] || [ "$rc" = 2 ] || { echo "self-update --check rc=$rc"; exit 1; }
+
+      - name: Homebrew cask (best effort — the tap may lag the release by minutes)
+        continue-on-error: true
+        run: |
+          brew install --cask emircan-karaca/oxide/oxide
+          oxide --version

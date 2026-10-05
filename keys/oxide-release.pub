@@ -1,0 +1,3 @@
+# Oxide sürüm imza açık anahtarı. İkiliye gömülür (crates/cli/src/selfupdate/keys.rs)
+# ve oxide-releases/keys/ altında yayınlanır.
+oxide-relpub1 b8432d0e682435cc DmlyTWkSIuEHkNbKKRkwhf2g0+TIdoLHX95IBTrkzrU=
