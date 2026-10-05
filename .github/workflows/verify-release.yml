@@ -38,9 +38,11 @@ jobs:
         run: shasum -a 256 -c SHA256SUMS
 
       - name: Manifest signature (Ed25519)
+        # Runner's python is Homebrew-managed (PEP 668): a plain pip install is refused, so use a venv.
         run: |
-          python3 -m pip install --quiet cryptography
-          python3 verify-sig.py keys/oxide-release.pub assets/manifest.json assets/manifest.json.sig
+          python3 -m venv .venv
+          .venv/bin/pip install --quiet cryptography
+          .venv/bin/python verify-sig.py keys/oxide-release.pub assets/manifest.json assets/manifest.json.sig
 
       - name: Manifest matches the release
         run: |
