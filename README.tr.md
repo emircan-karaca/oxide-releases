@@ -28,7 +28,7 @@ brew install --cask emircan-karaca/oxide/oxide
 **Tek satır**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/emircan-karaca/oxide-releases/main/install.sh | sh
+curl -fsSL https://get.oxide.tr | sh
 ```
 
 Betik makineyi kontrol eder, son sürümün manifest'ini ve DMG'sini indirir;

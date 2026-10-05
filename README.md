@@ -28,7 +28,7 @@ brew install --cask emircan-karaca/oxide/oxide
 **One line**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/emircan-karaca/oxide-releases/main/install.sh | sh
+curl -fsSL https://get.oxide.tr | sh
 ```
 
 The script checks the machine, downloads the latest manifest and DMG, verifies

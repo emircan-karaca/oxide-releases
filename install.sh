@@ -1,7 +1,8 @@
 #!/bin/bash
 # Oxide installer — https://github.com/emircan-karaca/oxide-releases
 #
-#   curl -fsSL https://raw.githubusercontent.com/emircan-karaca/oxide-releases/main/install.sh | sh
+#   curl -fsSL https://get.oxide.tr | sh
+#   (get.oxide.tr is a Cloudflare 302 to raw.githubusercontent.com/emircan-karaca/oxide-releases/main/install.sh)
 #
 # What it does, in order (every step prints what it checked):
 #   1. requires Apple Silicon + macOS 13 or newer
