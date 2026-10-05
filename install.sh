@@ -230,7 +230,9 @@ verify_manifest_signature() {
     # Three outcomes, told apart by openssl's own words: verified, a real
     # mismatch (refuse), or openssl could not run the check at all (say so,
     # fall back to the Apple chain; the installed oxide re-verifies in step 8).
-    out="$(openssl pkeyutl -verify -pubin -inkey "$pem" -rawin -in "$manifest" -sigfile "$tmp/manifest.sig.bin" 2>&1)"
+    # `|| true`: under set -e a failing command substitution would end the
+    # script silently (seen on the CI runner) before the case below can speak.
+    out="$(openssl pkeyutl -verify -pubin -inkey "$pem" -rawin -in "$manifest" -sigfile "$tmp/manifest.sig.bin" 2>&1 || true)"
     case "$out" in
         *"Verified Successfully"*) ok "manifest signature valid (key $keyid, $(openssl version | cut -d' ' -f1-2))" ;;
         *"Verification Failure"*)  die "manifest signature INVALID — refusing to continue" ;;
