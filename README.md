@@ -12,7 +12,7 @@ and Docker clients can talk to it over the Engine API.
 This repository holds the signed and notarized release builds, the installer
 and the release signing key. The source repository is private at the moment.
 
-**Latest: 0.3.0** · Requirements: Apple Silicon Mac, macOS 13 or newer
+**Latest: 0.3.1** · Requirements: Apple Silicon Mac, macOS 13 or newer
 (developed and verified on macOS 26).
 
 ## Install
@@ -31,7 +31,7 @@ brew install --cask emircan-karaca/oxide/oxide
 curl -fsSL https://get.oxide.tr | sh
 ```
 
-The script checks the machine, downloads the latest manifest and DMG, verifies
+`get.oxide.tr` is a 302 redirect to `raw.githubusercontent.com/emircan-karaca/oxide-releases/main/install.sh`; use that URL directly if you prefer. The script checks the machine, downloads the latest manifest and DMG, verifies
 the sha256, Apple notarization and the publisher Team ID, installs `Oxide.app`
 to `/Applications` (or `~/Applications`), links `oxide` into `~/.local/bin` and
 installs shell completions. Read it first if you like: [install.sh](install.sh).
@@ -68,6 +68,7 @@ desktop app asks once when its window opens.
 
 | Version | File | SHA-256 |
 |---|---|---|
+| 0.3.1 (2026-10-06) | [Oxide-0.3.1.dmg](https://github.com/emircan-karaca/oxide-releases/releases/download/v0.3.1/Oxide-0.3.1.dmg) | `c632b96135f7bbc48b3b424ece4d843c836b5bf742f28d06348f5a2e6c4913d3` |
 | 0.3.0 (2026-10-05) | [Oxide-0.3.0.dmg](https://github.com/emircan-karaca/oxide-releases/releases/download/v0.3.0/Oxide-0.3.0.dmg) | `222726cc65aa3800964e8f92310663779670dcf19b5f8efb9535565d0985e60e` |
 | 0.2.0 (2026-10-04) | [Oxide-0.2.0.dmg](https://github.com/emircan-karaca/oxide-releases/releases/download/v0.2.0/Oxide-0.2.0.dmg) | `c558891b7140d697bb9fbecb3a36a07ef5434adb9b38374236d7b293099a9074` |
 
@@ -108,18 +109,29 @@ export DOCKER_HOST=unix://$HOME/.oxide/oxide.sock
 docker ps                                   # real docker CLI, dockerode, testcontainers, IDE plugins
 ```
 
-## Networking notes (why this matters for the entitlement request)
+## Networking notes
 
 - Containers on the same user-defined network reach each other directly and by
   name through a user-space layer-2 switch built on
-  `VZFileHandleNetworkDeviceAttachment` (no entitlement needed). A container can
-  join up to 32 networks; `network connect`/`disconnect` work on running
-  containers.
+  `VZFileHandleNetworkDeviceAttachment`. A container can join up to 32
+  networks; `network connect`/`disconnect` work on running containers.
 - Outbound traffic and `-p` port publishing go through `VZNATNetworkDeviceAttachment`.
-- What is **not** possible today: a container visible on the LAN with its own
-  address (Docker's bridged/macvlan use case). That needs
-  `VZBridgedNetworkDeviceAttachment`, which requires the restricted entitlement
-  `com.apple.vm.networking`.
+- **Bridged networks (since 0.3.1):** a container visible on the LAN with its
+  own MAC and address, Docker's macvlan/bridged use case, through
+  `VZBridgedNetworkDeviceAttachment`:
+
+  ```bash
+  oxide network create --driver bridged -o parent=en0 --subnet 192.168.1.0/24 --gateway 192.168.1.1 lan
+  oxide run -d --name web --network lan --ip 192.168.1.50 nginx   # reachable from the LAN at 192.168.1.50
+  ```
+
+  Without `--subnet` the container asks the LAN's DHCP server for an address
+  (some corporate or guest Wi‑Fi networks refuse a second MAC; the interface
+  then stays address-less and the container keeps working over NAT). This
+  needs Apple's restricted `com.apple.vm.networking` entitlement, so it only
+  works with the `oxide` inside the signed `Oxide.app` bundle (DMG, Homebrew,
+  install.sh), not with an ad-hoc build from source. `oxide info` lists the
+  bridgeable host interfaces.
 
 ## How a release is trusted
 
@@ -145,6 +157,6 @@ re-verifies every published release and runs the installer on a clean macOS runn
 
 ```bash
 shasum -a 256 -c SHA256SUMS
-spctl -a -vv -t open --context context:primary-signature Oxide-0.3.0.dmg   # "Notarized Developer ID"
+spctl -a -vv -t open --context context:primary-signature Oxide-0.3.1.dmg   # "Notarized Developer ID"
 python3 verify-sig.py keys/oxide-release.pub manifest.json manifest.json.sig   # needs `pip install cryptography`
 ```

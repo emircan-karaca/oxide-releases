@@ -12,7 +12,7 @@ istemcileri Engine API üzerinden bağlanabilir.
 Bu depoda imzalı ve notarize edilmiş sürüm paketleri, kurulum betiği ve sürüm
 imza anahtarı var. Kaynak kod deposu şimdilik özel.
 
-**Son sürüm: 0.3.0** · Gereksinim: Apple Silicon Mac, macOS 13 ya da üstü
+**Son sürüm: 0.3.1** · Gereksinim: Apple Silicon Mac, macOS 13 ya da üstü
 (macOS 26'da geliştirildi ve doğrulandı).
 
 ## Kurulum
@@ -31,7 +31,7 @@ brew install --cask emircan-karaca/oxide/oxide
 curl -fsSL https://get.oxide.tr | sh
 ```
 
-Betik makineyi kontrol eder, son sürümün manifest'ini ve DMG'sini indirir;
+`get.oxide.tr`, `raw.githubusercontent.com/emircan-karaca/oxide-releases/main/install.sh` adresine 302 yönlendirmedir; istersen o adresi doğrudan kullan. Betik makineyi kontrol eder, son sürümün manifest'ini ve DMG'sini indirir;
 sha256'yı, Apple notarization'ını ve yayıncı Team ID'sini doğrular; `Oxide.app`i
 `/Applications`'a (yazılamıyorsa `~/Applications`'a) kurar, `oxide` komutunu
 `~/.local/bin`e bağlar ve kabuk tamamlamalarını kurar. Önce okumak istersen:
@@ -69,6 +69,7 @@ uygulaması pencere açılırken bir kez sorar.
 
 | Sürüm | Dosya | SHA-256 |
 |---|---|---|
+| 0.3.1 (2026-10-06) | [Oxide-0.3.1.dmg](https://github.com/emircan-karaca/oxide-releases/releases/download/v0.3.1/Oxide-0.3.1.dmg) | `c632b96135f7bbc48b3b424ece4d843c836b5bf742f28d06348f5a2e6c4913d3` |
 | 0.3.0 (2026-10-05) | [Oxide-0.3.0.dmg](https://github.com/emircan-karaca/oxide-releases/releases/download/v0.3.0/Oxide-0.3.0.dmg) | `222726cc65aa3800964e8f92310663779670dcf19b5f8efb9535565d0985e60e` |
 | 0.2.0 (2026-10-04) | [Oxide-0.2.0.dmg](https://github.com/emircan-karaca/oxide-releases/releases/download/v0.2.0/Oxide-0.2.0.dmg) | `c558891b7140d697bb9fbecb3a36a07ef5434adb9b38374236d7b293099a9074` |
 
@@ -113,14 +114,23 @@ docker ps                                   # gerçek docker CLI, dockerode, tes
 
 - Aynı kullanıcı ağındaki container'lar birbirine doğrudan ve isimle ulaşır;
   bunu `VZFileHandleNetworkDeviceAttachment` üstüne yazılmış, kullanıcı
-  alanında çalışan bir katman-2 anahtarı sağlar (entitlement gerekmez). Bir
-  container 32 ağa kadar üye olabilir; `network connect`/`disconnect` koşan
-  container'da çalışır.
+  alanında çalışan bir katman-2 anahtarı sağlar. Bir container 32 ağa kadar
+  üye olabilir; `network connect`/`disconnect` koşan container'da çalışır.
 - Dışarıya çıkış ve `-p` port yayınları `VZNATNetworkDeviceAttachment` üzerinden.
-- Bugün **yapılamayan** tek şey: container'ın LAN'da kendi adresiyle görünmesi
-  (Docker'ın bridged/macvlan kullanımı). Bunun için
-  `VZBridgedNetworkDeviceAttachment` gerekiyor; o da Apple'ın kısıtlı
-  `com.apple.vm.networking` iznini istiyor (başvuru yapıldı).
+- **Köprülü ağ (0.3.1'den beri):** container LAN'da kendi MAC'i ve adresiyle
+  görünür (Docker'ın macvlan/bridged kullanımı, `VZBridgedNetworkDeviceAttachment`):
+
+  ```bash
+  oxide network create --driver bridged -o parent=en0 --subnet 192.168.1.0/24 --gateway 192.168.1.1 lan
+  oxide run -d --name web --network lan --ip 192.168.1.50 nginx   # LAN'dan 192.168.1.50 ile ulaşılır
+  ```
+
+  `--subnet` verilmezse adres LAN'ın DHCP sunucusundan istenir (bazı kurumsal/
+  misafir Wi‑Fi'ler ikinci MAC'e kira vermez; o zaman arayüz adressiz kalır,
+  container NAT'tan çalışmaya devam eder). Apple'ın kısıtlı
+  `com.apple.vm.networking` izni gerektiği için yalnızca imzalı `Oxide.app`
+  paketindeki `oxide` ile çalışır (DMG, Homebrew, install.sh); kaynaktan
+  ad-hoc derlemede çalışmaz. `oxide info` köprülenebilir arayüzleri listeler.
 
 ## Bir sürüme neden güvenilir
 
@@ -147,6 +157,6 @@ yeniden doğrular ve kurulum betiğini temiz bir macOS runner'da çalıştırır
 
 ```bash
 shasum -a 256 -c SHA256SUMS
-spctl -a -vv -t open --context context:primary-signature Oxide-0.3.0.dmg   # "Notarized Developer ID"
+spctl -a -vv -t open --context context:primary-signature Oxide-0.3.1.dmg   # "Notarized Developer ID"
 python3 verify-sig.py keys/oxide-release.pub manifest.json manifest.json.sig   # `pip install cryptography` gerekir
 ```
