@@ -12,7 +12,7 @@ and Docker clients can talk to it over the Engine API.
 This repository holds the signed and notarized release builds, the installer
 and the release signing key. The source repository is private at the moment.
 
-**Latest: 0.3.1** · Requirements: Apple Silicon Mac, macOS 13 or newer
+**Latest: 0.4.0** · Requirements: Apple Silicon Mac, macOS 13 or newer
 (developed and verified on macOS 26).
 
 ## Install
@@ -68,6 +68,7 @@ desktop app asks once when its window opens.
 
 | Version | File | SHA-256 |
 |---|---|---|
+| 0.4.0 (2026-10-09) | [Oxide-0.4.0.dmg](https://github.com/emircan-karaca/oxide-releases/releases/download/v0.4.0/Oxide-0.4.0.dmg) | `b1477def26a1ff34e3d7e29d46a936d8f7f371a5bfa6f3842e64f811364345e7` |
 | 0.3.1 (2026-10-06) | [Oxide-0.3.1.dmg](https://github.com/emircan-karaca/oxide-releases/releases/download/v0.3.1/Oxide-0.3.1.dmg) | `c632b96135f7bbc48b3b424ece4d843c836b5bf742f28d06348f5a2e6c4913d3` |
 | 0.3.0 (2026-10-05) | [Oxide-0.3.0.dmg](https://github.com/emircan-karaca/oxide-releases/releases/download/v0.3.0/Oxide-0.3.0.dmg) | `222726cc65aa3800964e8f92310663779670dcf19b5f8efb9535565d0985e60e` |
 | 0.2.0 (2026-10-04) | [Oxide-0.2.0.dmg](https://github.com/emircan-karaca/oxide-releases/releases/download/v0.2.0/Oxide-0.2.0.dmg) | `c558891b7140d697bb9fbecb3a36a07ef5434adb9b38374236d7b293099a9074` |
@@ -132,6 +133,16 @@ docker ps                                   # real docker CLI, dockerode, testco
   works with the `oxide` inside the signed `Oxide.app` bundle (DMG, Homebrew,
   install.sh), not with an ad-hoc build from source. `oxide info` lists the
   bridgeable host interfaces.
+- **`--network host` (since 0.4.0):** Docker Desktop's model. The guest is a
+  separate kernel, so the host's network stack cannot be shared; instead
+  every TCP port the container starts listening on is published on the host
+  under the same number, without `-p`, and closed again when the container
+  stops listening. A service bound only to loopback stays on `127.0.0.1`.
+  UDP ports are not published automatically.
+- **Pods (since 0.4.0):** `--network container:X` (or `--pid`/`--ipc
+  container:X`) runs the new container inside X's VM with its own root
+  filesystem; network, processes and hostname are shared (sidecar/VPN
+  pattern, one VM for many containers).
 
 ## How a release is trusted
 
@@ -157,6 +168,6 @@ re-verifies every published release and runs the installer on a clean macOS runn
 
 ```bash
 shasum -a 256 -c SHA256SUMS
-spctl -a -vv -t open --context context:primary-signature Oxide-0.3.1.dmg   # "Notarized Developer ID"
+spctl -a -vv -t open --context context:primary-signature Oxide-0.4.0.dmg   # "Notarized Developer ID"
 python3 verify-sig.py keys/oxide-release.pub manifest.json manifest.json.sig   # needs `pip install cryptography`
 ```

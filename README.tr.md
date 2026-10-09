@@ -12,7 +12,7 @@ istemcileri Engine API üzerinden bağlanabilir.
 Bu depoda imzalı ve notarize edilmiş sürüm paketleri, kurulum betiği ve sürüm
 imza anahtarı var. Kaynak kod deposu şimdilik özel.
 
-**Son sürüm: 0.3.1** · Gereksinim: Apple Silicon Mac, macOS 13 ya da üstü
+**Son sürüm: 0.4.0** · Gereksinim: Apple Silicon Mac, macOS 13 ya da üstü
 (macOS 26'da geliştirildi ve doğrulandı).
 
 ## Kurulum
@@ -69,6 +69,7 @@ uygulaması pencere açılırken bir kez sorar.
 
 | Sürüm | Dosya | SHA-256 |
 |---|---|---|
+| 0.4.0 (2026-10-09) | [Oxide-0.4.0.dmg](https://github.com/emircan-karaca/oxide-releases/releases/download/v0.4.0/Oxide-0.4.0.dmg) | `b1477def26a1ff34e3d7e29d46a936d8f7f371a5bfa6f3842e64f811364345e7` |
 | 0.3.1 (2026-10-06) | [Oxide-0.3.1.dmg](https://github.com/emircan-karaca/oxide-releases/releases/download/v0.3.1/Oxide-0.3.1.dmg) | `c632b96135f7bbc48b3b424ece4d843c836b5bf742f28d06348f5a2e6c4913d3` |
 | 0.3.0 (2026-10-05) | [Oxide-0.3.0.dmg](https://github.com/emircan-karaca/oxide-releases/releases/download/v0.3.0/Oxide-0.3.0.dmg) | `222726cc65aa3800964e8f92310663779670dcf19b5f8efb9535565d0985e60e` |
 | 0.2.0 (2026-10-04) | [Oxide-0.2.0.dmg](https://github.com/emircan-karaca/oxide-releases/releases/download/v0.2.0/Oxide-0.2.0.dmg) | `c558891b7140d697bb9fbecb3a36a07ef5434adb9b38374236d7b293099a9074` |
@@ -131,6 +132,15 @@ docker ps                                   # gerçek docker CLI, dockerode, tes
   `com.apple.vm.networking` izni gerektiği için yalnızca imzalı `Oxide.app`
   paketindeki `oxide` ile çalışır (DMG, Homebrew, install.sh); kaynaktan
   ad-hoc derlemede çalışmaz. `oxide info` köprülenebilir arayüzleri listeler.
+- **`--network host` (0.4.0'dan beri):** Docker Desktop modeli. Guest ayrı bir
+  çekirdek, host'un ağ yığını paylaşılamaz; onun yerine container'ın dinlemeye
+  başladığı her TCP portu host'ta aynı numarayla, `-p` yazmadan yayınlanır ve
+  dinleme bitince kapanır. Yalnızca loopback'e bağlı servis `127.0.0.1`'de
+  kalır. UDP portları kendiliğinden yayınlanmaz.
+- **Pod (0.4.0'dan beri):** `--network container:X` (ya da `--pid`/`--ipc
+  container:X`) yeni container'ı X'in VM'inde kendi kök dosya sistemiyle
+  koşturur; ağ, süreçler ve hostname ortaktır (sidecar/VPN kalıbı, çok
+  container'a tek VM).
 
 ## Bir sürüme neden güvenilir
 
@@ -157,6 +167,6 @@ yeniden doğrular ve kurulum betiğini temiz bir macOS runner'da çalıştırır
 
 ```bash
 shasum -a 256 -c SHA256SUMS
-spctl -a -vv -t open --context context:primary-signature Oxide-0.3.1.dmg   # "Notarized Developer ID"
+spctl -a -vv -t open --context context:primary-signature Oxide-0.4.0.dmg   # "Notarized Developer ID"
 python3 verify-sig.py keys/oxide-release.pub manifest.json manifest.json.sig   # `pip install cryptography` gerekir
 ```
