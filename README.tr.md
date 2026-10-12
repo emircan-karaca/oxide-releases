@@ -12,7 +12,7 @@ istemcileri Engine API üzerinden bağlanabilir.
 Bu depoda imzalı ve notarize edilmiş sürüm paketleri, kurulum betiği ve sürüm
 imza anahtarı var. Kaynak kod deposu şimdilik özel.
 
-**Son sürüm: 0.4.0** · Gereksinim: Apple Silicon Mac, macOS 13 ya da üstü
+**Son sürüm: 0.4.1** · Gereksinim: Apple Silicon Mac, macOS 13 ya da üstü
 (macOS 26'da geliştirildi ve doğrulandı).
 
 ## Kurulum
@@ -69,6 +69,7 @@ uygulaması pencere açılırken bir kez sorar.
 
 | Sürüm | Dosya | SHA-256 |
 |---|---|---|
+| 0.4.1 (2026-10-12) | [Oxide-0.4.1.dmg](https://github.com/emircan-karaca/oxide-releases/releases/download/v0.4.1/Oxide-0.4.1.dmg) | `089d0479f7a36c4940d4082463f0779ad73840b3801c50e8399a99d96b2d4890` |
 | 0.4.0 (2026-10-09) | [Oxide-0.4.0.dmg](https://github.com/emircan-karaca/oxide-releases/releases/download/v0.4.0/Oxide-0.4.0.dmg) | `b1477def26a1ff34e3d7e29d46a936d8f7f371a5bfa6f3842e64f811364345e7` |
 | 0.3.1 (2026-10-06) | [Oxide-0.3.1.dmg](https://github.com/emircan-karaca/oxide-releases/releases/download/v0.3.1/Oxide-0.3.1.dmg) | `c632b96135f7bbc48b3b424ece4d843c836b5bf742f28d06348f5a2e6c4913d3` |
 | 0.3.0 (2026-10-05) | [Oxide-0.3.0.dmg](https://github.com/emircan-karaca/oxide-releases/releases/download/v0.3.0/Oxide-0.3.0.dmg) | `222726cc65aa3800964e8f92310663779670dcf19b5f8efb9535565d0985e60e` |
@@ -111,6 +112,15 @@ export DOCKER_HOST=unix://$HOME/.oxide/oxide.sock
 docker ps                                   # gerçek docker CLI, dockerode, testcontainers, IDE eklentileri
 ```
 
+`docker build` gerçek BuildKit'le çalışır: buildx `moby/buildkit`i bir Oxide VM'inde
+açar (docker-container sürücüsü). İmajların `--load`suz Oxide'a inmesi için bir kez:
+`oxide api install`, `docker context create oxide --docker host=unix://$HOME/.oxide/oxide.sock`,
+`docker context use oxide`, sonra
+`docker buildx create --name oxide --driver docker-container --driver-opt default-load=true oxide`
+ve `docker buildx use oxide` (sondaki `oxide` bağlam; verilmezse builder o an seçili bağlama,
+örneğin Docker Desktop'a kurulur). BuildKit'in durum birimi *disk birimi* olur
+(`oxide volume create -o type=disk`), çünkü overlayfs virtio-fs paylaşımında kurulamaz.
+
 ## Ağ notları
 
 - Aynı kullanıcı ağındaki container'lar birbirine doğrudan ve isimle ulaşır;
@@ -136,7 +146,8 @@ docker ps                                   # gerçek docker CLI, dockerode, tes
   çekirdek, host'un ağ yığını paylaşılamaz; onun yerine container'ın dinlemeye
   başladığı her TCP portu host'ta aynı numarayla, `-p` yazmadan yayınlanır ve
   dinleme bitince kapanır. Yalnızca loopback'e bağlı servis `127.0.0.1`'de
-  kalır. UDP portları kendiliğinden yayınlanmaz.
+  kalır. UDP sunucuları da (bağsız, geçici aralık dışı soket) yayınlanır.
+  Compose'da: `network_mode: host`.
 - **Pod (0.4.0'dan beri):** `--network container:X` (ya da `--pid`/`--ipc
   container:X`) yeni container'ı X'in VM'inde kendi kök dosya sistemiyle
   koşturur; ağ, süreçler ve hostname ortaktır (sidecar/VPN kalıbı, çok
@@ -167,6 +178,6 @@ yeniden doğrular ve kurulum betiğini temiz bir macOS runner'da çalıştırır
 
 ```bash
 shasum -a 256 -c SHA256SUMS
-spctl -a -vv -t open --context context:primary-signature Oxide-0.4.0.dmg   # "Notarized Developer ID"
+spctl -a -vv -t open --context context:primary-signature Oxide-0.4.1.dmg   # "Notarized Developer ID"
 python3 verify-sig.py keys/oxide-release.pub manifest.json manifest.json.sig   # `pip install cryptography` gerekir
 ```
