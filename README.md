@@ -115,9 +115,10 @@ docker ps                                   # real docker CLI, dockerode, testco
 (docker-container driver). To land images in Oxide without `--load`, once:
 `oxide api install`, `docker context create oxide --docker host=unix://$HOME/.oxide/oxide.sock`,
 `docker context use oxide`, then
-`docker buildx create --name oxide --driver docker-container --driver-opt default-load=true oxide`
-and `docker buildx use oxide` (the trailing `oxide` is the context; without it the builder
-lands on whatever context is current, e.g. Docker Desktop). BuildKit's state volume becomes a *disk
+`docker buildx create --name oxide-buildkit --driver docker-container --driver-opt default-load=true oxide`
+and `export BUILDX_BUILDER=oxide-buildkit` (the trailing `oxide` is the context; the builder
+cannot share the context's name, and `docker build` picks the context-named builder unless
+`BUILDX_BUILDER` is set). BuildKit's state volume becomes a *disk
 volume* (`oxide volume create -o type=disk`) because overlayfs cannot run on a
 virtio-fs share.
 

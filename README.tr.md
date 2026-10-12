@@ -116,9 +116,9 @@ docker ps                                   # gerçek docker CLI, dockerode, tes
 açar (docker-container sürücüsü). İmajların `--load`suz Oxide'a inmesi için bir kez:
 `oxide api install`, `docker context create oxide --docker host=unix://$HOME/.oxide/oxide.sock`,
 `docker context use oxide`, sonra
-`docker buildx create --name oxide --driver docker-container --driver-opt default-load=true oxide`
-ve `docker buildx use oxide` (sondaki `oxide` bağlam; verilmezse builder o an seçili bağlama,
-örneğin Docker Desktop'a kurulur). BuildKit'in durum birimi *disk birimi* olur
+`docker buildx create --name oxide-buildkit --driver docker-container --driver-opt default-load=true oxide`
+ve `export BUILDX_BUILDER=oxide-buildkit` (sondaki `oxide` bağlam; builder bağlamla aynı adı
+alamaz ve `docker build`, `BUILDX_BUILDER` yoksa bağlamın adındaki builder'ı seçer). BuildKit'in durum birimi *disk birimi* olur
 (`oxide volume create -o type=disk`), çünkü overlayfs virtio-fs paylaşımında kurulamaz.
 
 ## Ağ notları
